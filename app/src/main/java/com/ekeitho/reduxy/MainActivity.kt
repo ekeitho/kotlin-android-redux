@@ -3,19 +3,18 @@ package com.ekeitho.reduxy
 import android.databinding.DataBindingUtil
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import android.os.PersistableBundle
 import android.view.View
 import com.ekeitho.reduxy.databinding.ActivityMainBinding
 import io.reactivex.subjects.BehaviorSubject
 import io.reactivex.subjects.PublishSubject
 
 
-class MainActivity : AppCompatActivity(), KeithButtonClick  {
+class MainActivity : AppCompatActivity(), View.OnClickListener {
 
-    lateinit var eventSubject : PublishSubject<KeithEvent>
-    lateinit var storeSubject : BehaviorSubject<KeithStore>
-    lateinit var keithVM : KeithViewModel
-    lateinit var keithReducer : KeithReducer
+    lateinit var eventSubject : PublishSubject<Event>
+    lateinit var storeSubject : BehaviorSubject<Store>
+    lateinit var viewModel: ViewModel
+    lateinit var reducer: Reducer
     private val save_name = "SAVE_NAME"
     private val save_age = "SAVE_AGE"
 
@@ -23,26 +22,31 @@ class MainActivity : AppCompatActivity(), KeithButtonClick  {
         super.onCreate(savedInstanceState)
 
         val binding = DataBindingUtil.setContentView<ActivityMainBinding>(this, R.layout.activity_main)
-        var keithStore : KeithStore
+        var storeData: Store
 
         if (savedInstanceState == null) {
-            keithStore = KeithStore("keith", 25, true)
+            storeData = Store("keith", 25, true)
         } else {
             val name = savedInstanceState.getString(save_name)
             val age  = savedInstanceState.getInt(save_age)
-            keithStore = KeithStore(name, age, true)
+            storeData = Store(name, age, true)
         }
 
         eventSubject = PublishSubject.create()
         storeSubject = BehaviorSubject.create()
 
-        keithVM = KeithViewModel(storeSubject, this)
-        keithReducer = KeithReducer(keithStore, eventSubject, storeSubject)
-        binding.viewModel = keithVM
+        // view models listen to updates from the store
+            // helpful things to pass here are customize callbacks
+        viewModel = ViewModel(storeSubject)
+
+        // reducers listen to events sent by the view models
+            // when events are received, reducer sends update store - which VM is listening to
+        reducer = Reducer(storeData, eventSubject, storeSubject)
+        binding.viewModel = viewModel
     }
 
     override fun onClick(v: View?) {
-        eventSubject.onNext(KeithEvent("button", 0))
+        eventSubject.onNext(Event("button", 0))
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
