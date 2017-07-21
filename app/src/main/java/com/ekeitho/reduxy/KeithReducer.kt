@@ -1,12 +1,13 @@
 package com.ekeitho.reduxy
 
+import io.reactivex.subjects.BehaviorSubject
 import io.reactivex.subjects.PublishSubject
 
 class KeithReducer {
 
-    var keithStore = KeithStore("keith", 10, true)
-
-    constructor(events : PublishSubject<KeithEvent>, store : PublishSubject<KeithStore>) {
+    // Reducers do not store state, and they do NOT mutate state.
+    constructor(initialState : KeithStore, events : PublishSubject<KeithEvent>, store : BehaviorSubject<KeithStore>) {
+        var keithStore = initialState;
         // send initial update
         store.onNext(keithStore)
 

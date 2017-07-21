@@ -1,6 +1,7 @@
 package com.ekeitho.reduxy
 
 import android.databinding.ObservableField
+import io.reactivex.subjects.BehaviorSubject
 import io.reactivex.subjects.PublishSubject
 
 
@@ -12,7 +13,7 @@ class KeithViewModel {
     var buttonClick : KeithButtonClick
 
 
-    constructor(store : PublishSubject<KeithStore>, buttonClick: KeithButtonClick) {
+    constructor(store : BehaviorSubject<KeithStore>, buttonClick: KeithButtonClick) {
         this.buttonClick = buttonClick
 
         store.subscribe({ keithStore: KeithStore ->
