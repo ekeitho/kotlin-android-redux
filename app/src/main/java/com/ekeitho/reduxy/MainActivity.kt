@@ -6,54 +6,65 @@ import android.os.Bundle
 import android.view.View
 import com.ekeitho.reduxy.databinding.ActivityMainBinding
 import io.reactivex.subjects.BehaviorSubject
-import io.reactivex.subjects.PublishSubject
+
+/*
+    Android application is made up of its
+
+        * Application State
+            - This represents every state an activity or fragment can have.
+            - However, keep in mind to make this as stateless as possible (basically don't use many variables)
+                - Making it stateless as possible leads to:
+                    * easier to maintain and test, smaller chance of race conditions and app side defects
+
+            * singleton - since only need to initialize once for the life of the application
+
+        * Application Event Stream
+            - events are emitted by an activity, fragment, views, ..
+            - basically anything that has access to a context
+
+            * singleton - since the event stream should never change during the apps life
+
+        * Activity/Fragments
+            - the activity consumes user inputs and other intents,
+            - which these are passed to the event stream and this action purely updates
+            - the application state in some way
+ */
 
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
 
-    lateinit var eventSubject : PublishSubject<Event>
-    lateinit var storeSubject : BehaviorSubject<Store>
-    lateinit var viewModel: ViewModel
-    lateinit var reducer: Reducer
-    private val save_name = "SAVE_NAME"
-    private val save_age = "SAVE_AGE"
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         val binding = DataBindingUtil.setContentView<ActivityMainBinding>(this, R.layout.activity_main)
-        var storeData: Store
 
         if (savedInstanceState == null) {
-            storeData = Store("keith", 25, true)
-        } else {
-            val name = savedInstanceState.getString(save_name)
-            val age  = savedInstanceState.getInt(save_age)
-            storeData = Store(name, age, true)
+
+            // View Model and Reducer are singletons (kotlin uses objects to accomplish this sugaring)
+                // therefore since the references never change...
+                // streams are kept in sync, with up-to-date data, and rotation works out of the box
+
+            // view models listen to updates from the store
+            // helpful things to pass here are customized callbacks
+
+            // subjects are observers and observables
+            // therefore turning it just to an observable - means that VM CAN'T MAKE ANY CHANGES TO THE STATE!!!
+            ViewModel.init(ApplicationStateStream.observableState.hide())
+
+            // reducers listen to events sent by the system or user.
+            // when events are received, reducer sends update to the store - which VM is subscribed to
+            Reducer.init(ApplicationEventStream.observableEventStream, ApplicationStateStream.observableState)
+
+            // Reducer and View Models should only know about the observables and not the concrete details of the stream
         }
 
-        eventSubject = PublishSubject.create()
-        storeSubject = BehaviorSubject.create()
-
-        // view models listen to updates from the store
-            // helpful things to pass here are customize callbacks
-        viewModel = ViewModel(storeSubject)
-
-        // reducers listen to events sent by the view models
-            // when events are received, reducer sends update store - which VM is listening to
-        reducer = Reducer(storeData, eventSubject, storeSubject)
-        binding.viewModel = viewModel
+        binding.viewModel = ViewModel
     }
 
     override fun onClick(v: View?) {
-        eventSubject.onNext(Event("button", 0))
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        outState.putString(save_name, storeSubject.value.name)
-        outState.putInt(save_age, storeSubject.value.age)
-        super.onSaveInstanceState(outState)
+        ApplicationEventStream.observableEventStream.onNext(Event("button", 0))
     }
 
 }
+
+
 
