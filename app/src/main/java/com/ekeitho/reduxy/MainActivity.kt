@@ -3,9 +3,10 @@ package com.ekeitho.reduxy
 import android.databinding.DataBindingUtil
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import android.view.View
 import com.ekeitho.reduxy.databinding.ActivityMainBinding
 import io.reactivex.subjects.BehaviorSubject
+import io.reactivex.subjects.PublishSubject
+import io.reactivex.subjects.Subject
 
 /*
     Android application is made up of its
@@ -31,7 +32,7 @@ import io.reactivex.subjects.BehaviorSubject
  */
 
 
-class MainActivity : AppCompatActivity(), View.OnClickListener {
+class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,22 +49,20 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
             // subjects are observers and observables
             // therefore turning it just to an observable - means that VM CAN'T MAKE ANY CHANGES TO THE STATE!!!
-            ViewModel.init(ApplicationStateStream.observableState.hide())
+
+            val stateStream = BehaviorSubject.createDefault(ApplicationState("Keith", 25, true))
+            val eventStream : Subject<Event> = PublishSubject.create()
+
+            ViewModel.init(eventStream, stateStream.hide())
 
             // reducers listen to events sent by the system or user.
             // when events are received, reducer sends update to the store - which VM is subscribed to
-            Reducer.init(ApplicationEventStream.observableEventStream, ApplicationStateStream.observableState)
+            Reducer.init(eventStream.hide(), stateStream)
 
             // Reducer and View Models should only know about the observables and not the concrete details of the stream
         }
-
         binding.viewModel = ViewModel
     }
-
-    override fun onClick(v: View?) {
-        ApplicationEventStream.observableEventStream.onNext(Event("button", 0))
-    }
-
 }
 
 
