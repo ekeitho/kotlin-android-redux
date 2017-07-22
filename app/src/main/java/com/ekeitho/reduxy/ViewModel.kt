@@ -1,19 +1,18 @@
 package com.ekeitho.reduxy
 
 import android.databinding.ObservableField
-import io.reactivex.subjects.BehaviorSubject
+import io.reactivex.Observable
+import io.reactivex.subjects.Subject
 
 
-class ViewModel {
+class ViewModel private constructor(val eventSubject : Subject<Event>, storeObservable: Observable<Store>) {
 
-    val nameObs = ObservableField<String>()
-    val ageObs = ObservableField<Int>()
-    val isHappy = ObservableField<Boolean>()
+    private val nameObs = ObservableField<String>()
+    private val ageObs = ObservableField<Int>()
+    private val isHappy = ObservableField<Boolean>()
 
-
-    constructor(store : BehaviorSubject<Store>) {
-
-        store.subscribe({ store: Store ->
+    init {
+        storeObservable.subscribe({ store: Store ->
             if (nameObs.get() != store.name) {
                 nameObs.set(store.name)
             }
@@ -24,6 +23,18 @@ class ViewModel {
                 isHappy.set(store.isHappy)
             }
         })
+    }
 
+    companion object {
+        private var instance : ViewModel? = null
+
+        fun getInstance(eventSubject : Subject<Event>, storeObservable: Observable<Store>) : ViewModel {
+            if (instance == null) instance = ViewModel(eventSubject, storeObservable)
+            return instance!!
+        }
+    }
+
+    fun handleClick() {
+        eventSubject.onNext(ButtonClickEvent(true))
     }
 }

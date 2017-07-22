@@ -1,31 +1,39 @@
 package com.ekeitho.reduxy
 
-import io.reactivex.subjects.BehaviorSubject
-import io.reactivex.subjects.PublishSubject
+import io.reactivex.Observable
+import io.reactivex.subjects.Subject
 
-class Reducer {
+class Reducer(initialState : Store, events : Observable<Event>, store : Subject<Store>) {
 
-    // Reducers do not store state, and they do NOT mutate state.
-    constructor(initialState : Store, events : PublishSubject<Event>, store : BehaviorSubject<Store>) {
-        var keithStore = initialState;
+    private var keithStore : Store
+
+    init {
+        keithStore = initialState
         // send initial update
         store.onNext(keithStore)
+        subscribeToEvents(events, store)
+    }
 
+    companion object {
+        var instance : Reducer? = null
+
+        fun getInstance(initialState : Store, events : Observable<Event>, store : Subject<Store>) : Reducer {
+            if (instance == null) instance = Reducer(initialState, events, store)
+            return instance!!
+        }
+    }
+
+    fun subscribeToEvents(events: Observable<Event>, store: Subject<Store>) {
         events.subscribe({ event: Event ->
             val temp = keithStore
 
-            if (event.type == "name") {
-                //
-            } else if (event.type == "desc") {
-                //
-            } else if (event.type == "button") {
-               temp.name+="!"
-               temp.age++
-               keithStore =  Store(temp.name, temp.age, !temp.isHappy)
+            if (event is ButtonClickEvent) {
+                temp.name += "!"
+                temp.age++
+                keithStore =  Store(temp.name, temp.age, !temp.isHappy)
             } else {
-                throw UnsupportedOperationException()
+                throw UnsupportedOperationException("Reducer received unrecognized event of type ${event::class}")
             }
-
             store.onNext(keithStore)
         })
     }
