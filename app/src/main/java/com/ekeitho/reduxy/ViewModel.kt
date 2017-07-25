@@ -1,6 +1,8 @@
 package com.ekeitho.reduxy
 
 import android.databinding.ObservableField
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import io.reactivex.Observable
 import io.reactivex.disposables.Disposable
@@ -16,19 +18,26 @@ object ViewModel {
 
     var subscription : Disposable = Disposables.disposed()
 
-    fun onNameChanged(s : CharSequence, start : Int, before : Int, count : Int) {
-        eventStream.onNext(NameChangeEvent(s.toString()))
+    var buttonClickListener = object : View.OnClickListener {
+        override fun onClick(p0: View?) {
+            eventStream.onNext(ButtonClickEvent())
+        }
     }
 
-    fun onAgeChanged(s : CharSequence, start : Int, before : Int, count : Int) {
-        // If parsing this CharSequence to Integer fails, it means that
-        // the edittext has not been set to number input, and therefore
-        // we should crash
-        eventStream.onNext(AgeChangeEvent(Integer.parseInt(s.toString())))
+    var nameWatcher = object : TextWatcher {
+        override fun afterTextChanged(p0: Editable?) {}
+        override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {}
+        override fun onTextChanged(s: CharSequence?, p1: Int, p2: Int, p3: Int) {
+            eventStream.onNext(NameChangeEvent(s.toString()))
+        }
     }
 
-    fun onButtonClicked(v : View?) {
-        eventStream.onNext(ButtonClickEvent())
+    var ageWatcher = object : TextWatcher {
+        override fun afterTextChanged(p0: Editable?) {}
+        override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {}
+        override fun onTextChanged(s: CharSequence?, p1: Int, p2: Int, p3: Int) {
+            eventStream.onNext(AgeChangeEvent(Integer.parseInt(s.toString())))
+        }
     }
 
     fun init(eventStream : Subject<Event>, stateStream: Observable<ApplicationState>) {
