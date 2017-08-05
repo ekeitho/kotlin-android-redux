@@ -31,37 +31,27 @@ import io.reactivex.subjects.Subject
             - the application state in some way
  */
 
-
 class MainActivity : AppCompatActivity() {
+
+    private companion object {
+        val vm: ViewModel
+        val reducer: Reducer
+
+        init {
+            var stateStream = BehaviorSubject.createDefault(ApplicationState("Keith", 25, true))
+            var eventStream : Subject<Event> = PublishSubject.create()
+            vm = ViewModel(eventStream, stateStream.hide())
+            reducer = Reducer(eventStream.hide(), stateStream)
+        }
+    }
+
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val binding = DataBindingUtil.setContentView<ActivityMainBinding>(this, R.layout.activity_main)
 
-        if (savedInstanceState == null) {
-
-            // View Model and Reducer are singletons (kotlin uses objects to accomplish this sugaring)
-                // therefore since the references never change...
-                // streams are kept in sync, with up-to-date data, and rotation works out of the box
-
-            // view models listen to updates from the store
-            // helpful things to pass here are customized callbacks
-
-            // subjects are observers and observables
-            // therefore turning it just to an observable - means that VM CAN'T MAKE ANY CHANGES TO THE STATE!!!
-
-            val stateStream = BehaviorSubject.createDefault(ApplicationState("Keith", 25, true))
-            val eventStream : Subject<Event> = PublishSubject.create()
-
-            ViewModel.init(eventStream, stateStream.hide())
-
-            // reducers listen to events sent by the system or user.
-            // when events are received, reducer sends update to the store - which VM is subscribed to
-            Reducer.init(eventStream.hide(), stateStream)
-
-            // Reducer and View Models should only know about the observables and not the concrete details of the stream
-        }
-        binding.viewModel = ViewModel
+        binding.viewModel = vm
     }
 }
 
